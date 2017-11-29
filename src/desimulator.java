@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 
 public class desimulator {
@@ -30,14 +31,11 @@ public class desimulator {
 		regs.put("1111", 15);	
 	}
 	
-	public static void fetch() {
+	public static void fetch() throws NumberFormatException, IOException {
 		String inst = instruction_mem[regarray[15]][0];
 		System.out.println("Fetch instruction " + instruction_mem[regarray[15]][1]+  " from address " + instruction_mem[regarray[15]][2]);
-		if (inst.equals("11101111000000000000000000010001")) {
-			System.out.println("MEMORY: No memory operation\nEXIT:");
-			end =true;
-		}
-		else if (inst.substring(4, 10).equals("00000")) {
+		
+		 if (inst.substring(4, 10).equals("00000")) {
 			regarray[15]++;
 			Mult(inst);
 		}
@@ -53,11 +51,92 @@ public class desimulator {
 			regarray[15]++;
 			branch(inst);
 		}
+		else if (inst.charAt(4)==1 && inst.charAt(5)==1 && inst.charAt(6)==1 && inst.charAt(7)==1){
+			regarray[15]++;
+			swi(inst);
+		}
+	}
+	public static void swi(String s) throws NumberFormatException, IOException {
+		String comment = s.substring(8);
+		int opcode = Integer.parseInt(comment, 2);
+		if (opcode == 107) {
+			System.out.println(regarray[0]);
+			System.out.println("DECODE: operation is swi0x6b\nMEMORY: No memory operation");
+		}
+		else if (opcode == 108) {
+			BufferedReader r = new BufferedReader(new InputStreamReader(System.in)) ;
+			regarray[0] = Integer.parseInt(r.readLine());
+			System.out.println("DECODE: operation is swi0x6c\nMEMORY: No memory operation");
+
+		}
+		if (opcode == 17) {
+			System.out.println("MEMORY: No memory operation\nEXIT:");
+			end =true;
+		}
 	}
 	public static void branch(String s) {
 		char link = s.charAt(7);
+		int result=0;
+		String off = s.substring(8);
+		if (off.charAt(0)==0) {
+			result = Integer.parseInt(off, 2);
+		}
+		else {
+			result = Integer.parseInt(off , 2);
+			result = ~result;
+			result ++;
+		}
+		HashMap<String , String> hm = new HashMap<>();
+		hm.put("0000", "BEQ");
+		hm.put("0001", "BNE");
+		hm.put("1010", "BGE");
+		hm.put("1011", "BLT");
+		hm.put("1100", "BGT");
+		hm.put("1101", "BNE");
+		hm.put("1110","B");
 		String condition = s.substring(0, 4);
-		if (condition.equals("0000") && )
+		if (condition.equals("0000") && Z!=1 ) {
+			return;
+		}
+		else if (condition.equals("0001") && Z==1) {
+			return;
+		}
+		else if (condition.equals("1010") && N==1) {
+			return;
+		}
+		else if (condition.equals("1011") && N==0) {
+			return;
+		}
+		else if (condition.equals("1100") && (N==1 || Z==1)) {
+			return;
+		}
+		else if (condition.equals("1101") && N==0 && Z==0) {
+			return;
+		}
+		else {
+			if (link == 1) {
+				regarray[14] = regarray[15];
+			}
+			if (off.charAt(0)==0) {
+				regarray[15] = regarray[15] + Integer.parseInt(off, 2);
+			}
+			else {
+				regarray[15] = regarray[15] + result;
+			}
+		
+		}
+		String oper = hm.get(condition);
+		String op = oper;
+		if (link==1) {
+			
+			oper = oper + "L";
+		}
+		System.out.println("DECODE: Operation is "+ oper );
+		System.out.println("Offset is" + result);
+		System.out.println("EXECUTE: If " + op+ " move to PC + (" +result+")." );
+		System.out.println("MEMORY: No memory operation");
+		System.out.println("WRITEBACK: no writeback");
+		
 	}
 	
 	
@@ -127,7 +206,7 @@ public class desimulator {
 		
 	}
 	
-	public static void run() {
+	public static void run() throws NumberFormatException, IOException {
 		while (!end) {
 			fetch();
 		}

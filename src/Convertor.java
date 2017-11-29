@@ -15,7 +15,8 @@ public class Convertor {
 	}
 	public static void main(String[] args) {
 		Convertor c = new Convertor();
-		System.out.println(c.convert("E3A0200A"));
-		
+		//System.out.println(c.convert("E3A0200A"));
+		System.out.println(Integer.parseInt("01001",2));
+		System.out.println(1+ ~(Integer.parseInt("01001",2)));
 	}
 }
