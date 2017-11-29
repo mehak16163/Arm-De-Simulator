@@ -11,6 +11,7 @@ public class desimulator {
 	static int[] regarray = new int[16];
 	static int N , C , V ,Z;
 	static int mem[] = new int[4000];
+	static int[] stack = new int[1000];
 	public static HashMap<String , Integer> regs = new HashMap<String , Integer>();
 	public desimulator() {
 		regs.put("0000", 0);
@@ -29,29 +30,30 @@ public class desimulator {
 		regs.put("1101", 13);
 		regs.put("1110", 14);
 		regs.put("1111", 15);	
+		regarray[13] = 1000;
 	}
 	
 	public static void fetch() throws NumberFormatException, IOException {
 		String inst = instruction_mem[regarray[15]][0];
 		System.out.println("Fetch instruction " + instruction_mem[regarray[15]][1]+  " from address " + instruction_mem[regarray[15]][2]);
 		
-		 if (inst.substring(4, 10).equals("00000")) {
+		if (inst.substring(4, 10).equals("00000")) {
 			regarray[15]++;
 			Mult(inst);
 		}
-		else if (inst.charAt(4)==0 && inst.charAt(5)==0) {
+		else if (inst.substring(4,5).equals("0") && inst.substring(5,6).equals("0")) {
 			regarray[15]++;
 			performALU(inst);
 		}
-		else if (inst.charAt(4)==0 && inst.charAt(5)==1) {
+		else if (inst.substring(4,5).equals("0") && inst.substring(5,6).equals("1")) {
 			regarray[15]++;
 			memory(inst);
 		}
-		else if (inst.charAt(4)==1 && inst.charAt(5)==0 && inst.charAt(6)==1) {
+		else if (inst.substring(4,5).equals("1") && inst.substring(5,6).equals("0") && inst.substring(6,7).equals("1")) {
 			regarray[15]++;
 			branch(inst);
 		}
-		else if (inst.charAt(4)==1 && inst.charAt(5)==1 && inst.charAt(6)==1 && inst.charAt(7)==1){
+		else if (inst.substring(4,5).equals("1") && inst.substring(5,6).equals("1") && inst.substring(6,7).equals("1") && inst.substring(7,8).equals("1")){
 			regarray[15]++;
 			swi(inst);
 		}
@@ -75,15 +77,16 @@ public class desimulator {
 		}
 	}
 	public static void branch(String s) {
-		char link = s.charAt(7);
+		int  link = Integer.parseInt(s.substring(7,8));
 		int result=0;
 		String off = s.substring(8);
-		if (off.charAt(0)==0) {
+		if ((Integer.parseInt(off.substring(0,1))==0)) {
 			result = Integer.parseInt(off, 2);
 		}
 		else {
-			result = Integer.parseInt(off , 2);
-			result = ~result;
+			String offa = Convertor.sign(off);
+			result = Integer.parseInt(offa , 2);
+			result = ~(result);
 			result ++;
 		}
 		HashMap<String , String> hm = new HashMap<>();
@@ -117,7 +120,7 @@ public class desimulator {
 			if (link == 1) {
 				regarray[14] = regarray[15];
 			}
-			if (off.charAt(0)==0) {
+			if (Integer.parseInt(off.substring(0,1))==0) {
 				regarray[15] = regarray[15] + Integer.parseInt(off, 2);
 			}
 			else {
@@ -144,13 +147,15 @@ public class desimulator {
 		String base = s.substring(12, 16);
 		int base_1 = regs.get(base);
 		int op1 = regarray[base_1];
+		
 		String dest = s.substring(16,20);
 		int des_1 = regs.get(base);
 		String offset = s.substring(20);
-		char ls = s.charAt(11);
-		char ud = s.charAt(8);
-		char pp = s.charAt(7);
-		char im = s.charAt(6);
+		
+		int ls = Integer.parseInt(s.substring(11,12));
+		int ud = Integer.parseInt(s.substring(8,9));
+		int pp =Integer.parseInt(s.substring(7,8));;
+		int im = Integer.parseInt(s.substring(6,7));;
 		int op2;
 		if (im==0) {
 			op2 = Integer.parseInt(offset, 2);
@@ -209,6 +214,11 @@ public class desimulator {
 	public static void run() throws NumberFormatException, IOException {
 		while (!end) {
 			fetch();
+			System.out.println("\n");
+			
+		}
+		for (int i=0;i<=15;i++) {
+			System.out.println("R"+i+": "+regarray[i]);
 		}
 	}
 	public static void Mult(String s) {
@@ -246,7 +256,7 @@ public class desimulator {
 		int op1 = regarray[reg1];
 		int op2=0;
 		int reg2=0;
-		if (s.charAt(6)==1) {
+		if (Integer.parseInt(s.substring(6,7))==1) {
 			String oper = s.substring(24);
 			op2 = Integer.parseInt(oper, 2);
 		}
@@ -256,13 +266,13 @@ public class desimulator {
 			op2 = regarray[reg2];
 		}
 		System.out.print("DECODE: Operation is "+opcodes.get(opcode)+", First operand is R"+reg1+", ");
-		if (s.charAt(6)==1) {
+		if (s.substring(6,7).equals("1")) {
 			System.out.println("immediate Second Operand is "+ op2+", Destination register is R"+reg3+".");
 			System.out.println("Read Registers: R"+reg1+": "+op1);
 		}
 		else {
 			System.out.println("Second Register is R"+reg2+", Destination register is R"+reg3+".");
-			System.out.println("Read Register is R"+reg1+": "+reg1+", R"+reg2+": "+op2);
+			System.out.println("Read Register is R"+reg1+": "+op1+", R"+reg2+": "+op2);
 		}
 		if (opcode.equals("1010")) {
 			int result = op1 - op2;
@@ -319,18 +329,20 @@ public class desimulator {
 		}
 	}
 	public static void main(String[] args) throws IOException {
-		BufferedReader rd = new BufferedReader(new FileReader("code.mem"));
+		BufferedReader rd = new BufferedReader(new FileReader("./src/code.mem"));
 		desimulator desim = new desimulator();
 		String instruction = rd.readLine();
 		while(instruction != null) {
+
 			String address = instruction.split(" ")[0].substring(2);
 			String hex = instruction.split(" ")[1].substring(2);
 			Convertor c = new Convertor();
-			int add = c.toint(c.convert(address));
+			int add = c.toint(c.convert(address))/4;
 			String hexa = c.convert(hex);
 			desim.instruction_mem[add][0] = hexa;
 			desim.instruction_mem[add][1] = hex;
 			desim.instruction_mem[add][2] = address;
+			instruction=rd.readLine();
 		}
 		desim.run();
 	}	
