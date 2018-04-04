@@ -6,4 +6,5 @@ The various commands which can be simulated are:
 * swi instructions
 * ldr
 * str
+
 Contributors are: Mehak Gupta.
