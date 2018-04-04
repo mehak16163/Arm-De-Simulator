@@ -7,4 +7,3 @@ The various commands which can be simulated are:
 * ldr
 * str
 
-Contributors are: Mehak Gupta.
